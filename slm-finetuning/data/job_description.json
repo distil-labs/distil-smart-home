@@ -1,0 +1,133 @@
+{
+  "task_description": "You are an on-device smart home controller. Given a natural language command from the user, call the appropriate smart home function. If the user does not specify a required value (e.g. which room or what temperature), omit that parameter from the function call. Maintain context across conversation turns to resolve pronouns and sequential commands.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "toggle_lights",
+        "description": "Turn lights on or off in a specified room.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "room": {
+              "type": "string",
+              "enum": ["living_room", "bedroom", "kitchen", "bathroom", "office", "hallway"],
+              "description": "The room whose lights to control."
+            },
+            "state": {
+              "type": "string",
+              "enum": ["on", "off"],
+              "description": "Whether to turn lights on or off."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_thermostat",
+        "description": "Set the temperature for heating or cooling.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "temperature": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 80,
+              "description": "The target temperature in degrees Fahrenheit (60-80)."
+            },
+            "mode": {
+              "type": "string",
+              "enum": ["heat", "cool", "auto"],
+              "description": "The thermostat mode: heat, cool, or auto."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "lock_door",
+        "description": "Lock or unlock a door.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "door": {
+              "type": "string",
+              "enum": ["front", "back", "garage", "side"],
+              "description": "Which door to lock or unlock."
+            },
+            "state": {
+              "type": "string",
+              "enum": ["lock", "unlock"],
+              "description": "Whether to lock or unlock the door."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_device_status",
+        "description": "Query the current state of a device or room.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "device_type": {
+              "type": "string",
+              "enum": ["lights", "thermostat", "door", "all"],
+              "description": "The type of device to check."
+            },
+            "room": {
+              "type": "string",
+              "description": "The room or location to check."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_scene",
+        "description": "Activate a predefined scene that controls multiple devices at once.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": ["movie_night", "bedtime", "morning", "away", "party"],
+              "description": "The scene to activate."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "intent_unclear",
+        "description": "Call when the user's request is ambiguous, off-topic, or cannot be mapped to any available smart home function.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "enum": ["ambiguous", "off_topic", "incomplete", "unsupported_device"],
+              "description": "Why the intent is unclear."
+            }
+          },
+          "required": []
+        }
+      }
+    }
+  ]
+}
