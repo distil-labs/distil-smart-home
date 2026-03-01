@@ -89,6 +89,21 @@ Run the orchestrator:
 python orchestrator.py --model distil-home-assistant-functiongemma.gguf --port 8000
 ```
 
+### Option 4: Mobile (Cactus)
+
+Plug in a device and run:
+
+```bash
+./mobile/run.sh --ios      # deploy to iPhone / iPad
+./mobile/run.sh --android  # deploy to Android
+```
+
+The script handles everything automatically: cloning Cactus, converting the model, building native libs, and deploying to the device.
+
+> **iOS:** On first install, go to Settings → General → VPN & Device Management and trust your developer certificate.
+>
+> **Android:** On first launch, grant the storage permission when prompted so the app can read the model from `/sdcard/`.
+
 ## Links
 
 - [Distil Labs Website](https://distillabs.ai/?utm_source=huggingface&utm_medium=referral&utm_campaign=smart-home)
