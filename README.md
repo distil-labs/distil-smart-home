@@ -94,8 +94,8 @@ python orchestrator.py --model distil-home-assistant-functiongemma.gguf --port 8
 Plug in a device and run:
 
 ```bash
-./mobile/run.sh --ios      # deploy to iPhone / iPad
-./mobile/run.sh --android  # deploy to Android
+./mobile/run.sh --ios      # run on iOS
+./mobile/run.sh --android  # run on Android
 ```
 
 The script handles everything automatically: cloning Cactus, converting the model, building native libs, and deploying to the device.
