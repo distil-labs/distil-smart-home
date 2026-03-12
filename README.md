@@ -1,9 +1,8 @@
-
 # Smart Home Controller
 
 An on-device smart home controller powered by fine-tuned small language models (SLMs). Natural language commands are processed locally for private, low-latency smart home control — no cloud required.
 
-The system pairs an SLM with a deterministic dialogue manager (`orchestrator.py`) that handles slot elicitation, context management, and backend execution.
+The system pairs an SLM with a deterministic dialogue manager that handles slot elicitation, context management, and backend execution.
 
 ## Results
 
@@ -35,61 +34,6 @@ Models were trained using knowledge distillation from a 120B teacher model via t
 | Qwen3-0.6B (tuned) | GGUF only | [distil-labs/distil-home-assistant-qwen3-gguf](https://huggingface.co/distil-labs/distil-home-assistant-qwen3-gguf) |
 
 ## Deployment
-
-### Option 1: Ollama
-
-Install [Ollama](https://ollama.com/) and OpenAI:
-```bash
-pip install openai
-```
-
-Download and create the model:
-```bash
-huggingface-cli download distil-labs/distil-home-assistant-functiongemma --local-dir models/distil-home-assistant-functiongemma
-cd models/distil-home-assistant-functiongemma
-ollama create model -f Modelfile
-```
-
-Run the orchestrator:
-```bash
-python orchestrator.py --port 11434
-```
-
-### Option 2: vLLM
-
-Install vLLM and OpenAI:
-```bash
-pip install vllm openai
-```
-
-Start the server:
-```bash
-vllm serve models/distil-home-assistant-functiongemma --api-key EMPTY
-```
-
-Run the orchestrator:
-```bash
-python orchestrator.py --port 8000
-```
-
-### Option 3: llama.cpp (GGUF)
-
-Download the GGUF model:
-```bash
-huggingface-cli download distil-labs/distil-home-assistant-functiongemma-gguf --local-dir models/distil-home-assistant-functiongemma-gguf
-```
-
-Start the server:
-```bash
-llama-server -m models/distil-home-assistant-functiongemma-gguf/distil-home-assistant-functiongemma.gguf --jinja
-```
-
-Run the orchestrator:
-```bash
-python orchestrator.py --model distil-home-assistant-functiongemma.gguf --port 8000
-```
-
-### Option 4: Mobile (Cactus)
 
 Plug in a device and run:
 

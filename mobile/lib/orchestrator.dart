@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'home_state.dart';
 
 // ---------------------------------------------------------------------------
-// Tool definitions — mirrors orchestrator.py TOOLS exactly
+// Tool definitions
 // ---------------------------------------------------------------------------
 
 const kTools = [
@@ -144,7 +144,7 @@ const kTools = [
 ];
 
 // ---------------------------------------------------------------------------
-// Constants — mirrors orchestrator.py exactly
+// Constants
 // ---------------------------------------------------------------------------
 
 const _requiredArgs = {
@@ -212,7 +212,7 @@ const _systemPrompt =
     'Always respond with a tool call.\n\n';
 
 // ---------------------------------------------------------------------------
-// Orchestrator — mirrors TextOrchestrator in orchestrator.py
+// Orchestrator
 // ---------------------------------------------------------------------------
 
 class SmartHomeOrchestrator {
