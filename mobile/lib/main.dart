@@ -446,29 +446,44 @@ class _HomePageState extends State<HomePage> {
     _orchestrator.addUserMessage(text);
 
     try {
-      final result = await _runner.infer(_orchestrator.messagesForModel, kTools);
-      if (result['ok'] != true) throw Exception(result['error']);
-      final calls = result['functionCalls'] as List?;
-
-      final firstCall = (calls != null && calls.isNotEmpty)
-          ? (calls.first as Map).cast<String, dynamic>()
-          : null;
-
-      final response = firstCall == null
-          ? _orchestrator.handleNoFunctionCall()
-          : _orchestrator.handleFunctionCall(firstCall);
+      String? response;
+      Map<String, dynamic>? call;
+      const maxRetries = 5;
+      for (var attempt = 0; attempt < maxRetries; attempt++) {
+        final result = await _runner.infer(_orchestrator.messagesForModel, kTools);
+        if (result['ok'] != true) throw Exception(result['error']);
+        final calls = result['functionCalls'] as List?;
+        final candidate = (calls != null && calls.isNotEmpty)
+            ? (calls.first as Map).cast<String, dynamic>()
+            : null;
+        if (candidate == null) continue;
+        // Model explicitly signals unclear intent — respond immediately, no retry
+        if (candidate['name'] == 'intent_unclear') {
+          response = _orchestrator.handleFunctionCall(candidate);
+          call = candidate;
+          break;
+        }
+        try {
+          response = _orchestrator.handleFunctionCall(candidate);
+          call = candidate;
+          break;
+        } catch (_) {
+          continue; // Parsing error — retry
+        }
+      }
+      response ??= _orchestrator.handleNoFunctionCall();
 
       if (!mounted) return;
       setState(() {
-        _messages.add((text: response, isUser: false, isError: false, call: firstCall));
-        _thinking = false;
+        _messages.add((text: response!, isUser: false, isError: false, call: call));
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _messages.add((text: 'Error: $e', isUser: false, isError: true, call: null));
-        _thinking = false;
       });
+    } finally {
+      if (mounted) setState(() => _thinking = false);
     }
     _scrollToBottom();
   }

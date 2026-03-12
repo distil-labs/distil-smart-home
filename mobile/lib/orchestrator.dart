@@ -272,7 +272,11 @@ class SmartHomeOrchestrator {
 
       case 'set_thermostat':
         homeState?.setThermostat(
-          temp: (args['temperature'] as num?)?.toInt(),
+          temp: switch (args['temperature']) {
+            num n => n.toInt(),
+            String s => int.tryParse(s),
+            _ => null,
+          },
           mode: args['mode'] as String?,
         );
         final modeSuffix = args['mode'] != null ? ' in ${args['mode']} mode' : '';
