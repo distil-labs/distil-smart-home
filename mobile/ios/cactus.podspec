@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'cactus'
-  s.version          = '1.9'
+  s.version          = '1.11'
   s.summary          = 'Cactus on-device inference engine'
   s.homepage         = 'https://github.com/cactus-compute/cactus'
   s.license          = { :type => 'MIT' }

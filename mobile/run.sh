@@ -18,25 +18,29 @@ check flutter "Flutter SDK — https://flutter.dev/docs/get-started/install"
 [ "$PLATFORM" = "--android" ] && check adb  "ADB — install Android SDK platform-tools: https://developer.android.com/tools/releases/platform-tools"
 
 # Clone and set up Cactus
-[ ! -d "cactus" ] && git clone --branch v1.9 https://github.com/cactus-compute/cactus
+[ ! -d "cactus" ] && git clone --branch v1.11 https://github.com/cactus-compute/cactus
 source cactus/setup
 
 # Convert model
-[ ! -d "models/smart-home-model" ] && cactus convert distil-labs/distil-home-assistant-qwen3 models/smart-home-model --precision INT8
+[ ! -d "models/smart-home-model" ] && cactus convert distil-labs/distil-home-assistant-functiongemma models/smart-home-model --precision FP16
 
 # Build and copy native libs (skip if already built)
 NEEDS_BUILD=0
 [ "$PLATFORM" = "--android" ] && [ ! -f "android/app/src/main/jniLibs/arm64-v8a/libcactus.so" ] && NEEDS_BUILD=1
 [ "$PLATFORM" = "--ios" ]     && [ ! -d "ios/cactus.xcframework" ] && NEEDS_BUILD=1
 if [ "$NEEDS_BUILD" = 1 ]; then
-  cactus build --flutter
-  if [ -f "cactus/flutter/libcactus.so" ]; then
-    mkdir -p android/app/src/main/jniLibs/arm64-v8a
-    cp cactus/flutter/libcactus.so android/app/src/main/jniLibs/arm64-v8a/
+  if [ "$PLATFORM" = "--ios" ]; then
+    cactus build --apple
+  else
+    cactus build --android
   fi
-  if [ -d "cactus/flutter/cactus-ios.xcframework" ]; then
+  if [ -f "cactus/android/libcactus.so" ]; then
+    mkdir -p android/app/src/main/jniLibs/arm64-v8a
+    cp cactus/android/libcactus.so android/app/src/main/jniLibs/arm64-v8a/
+  fi
+  if [ -d "cactus/apple/cactus-ios.xcframework" ]; then
     rm -rf ios/cactus.xcframework ios/Pods ios/Podfile.lock
-    cp -R cactus/flutter/cactus-ios.xcframework ios/cactus.xcframework
+    cp -R cactus/apple/cactus-ios.xcframework ios/cactus.xcframework
   fi
 fi
 
