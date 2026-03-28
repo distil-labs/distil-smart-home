@@ -18,11 +18,12 @@ check flutter "Flutter SDK — https://flutter.dev/docs/get-started/install"
 [ "$PLATFORM" = "--android" ] && check adb  "ADB — install Android SDK platform-tools: https://developer.android.com/tools/releases/platform-tools"
 
 # Clone and set up Cactus
-[ ! -d "cactus" ] && git clone --branch v1.11 https://github.com/cactus-compute/cactus
+[ ! -d "cactus" ] && git clone https://github.com/cactus-compute/cactus && git -C cactus checkout c768b0457f4ce07d3ea00b5d486079c4c8d95dbd
 source cactus/setup
+cp cactus/flutter/cactus.dart lib/cactus.dart
 
 # Convert model
-[ ! -d "models/smart-home-model" ] && cactus convert distil-labs/distil-home-assistant-functiongemma models/smart-home-model --precision FP16
+[ ! -d "models/smart-home-model" ] && cactus convert distil-labs/distil-home-assistant-functiongemma models/smart-home-model --precision INT8
 
 # Build and copy native libs (skip if already built)
 NEEDS_BUILD=0

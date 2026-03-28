@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'home_state.dart';
 
@@ -151,9 +152,6 @@ const _requiredArgs = {
   'toggle_lights': ['room', 'state'],
   'set_thermostat': ['temperature'],
   'lock_door': ['door', 'state'],
-  'open_door': ['door'],
-  'unlock_door': ['door'],
-  'close_door': ['door'],
   'get_device_status': ['device_type'],
   'set_scene': ['scene'],
   'intent_unclear': <String>[],
@@ -217,18 +215,37 @@ const _systemPrompt =
 
 class SmartHomeOrchestrator {
   final HomeState? homeState;
-  String _currentMessage = '';
+  final List<Map<String, dynamic>> _history = [];
 
   SmartHomeOrchestrator({this.homeState});
 
   List<Map<String, dynamic>> get messagesForModel => [
         {'role': 'system', 'content': _systemPrompt},
-        {'role': 'user', 'content': _currentMessage},
+        ..._history,
       ];
 
-  void addUserMessage(String text) => _currentMessage = text;
+  void addUserMessage(String text) =>
+      _history.add({'role': 'user', 'content': text});
 
-  void reset() => _currentMessage = '';
+  void recordAssistantCall(Map<String, dynamic> call) {
+    final argsStr = call['arguments'] is String
+        ? call['arguments'] as String
+        : jsonEncode(call['arguments']);
+    _history.add({
+      'role': 'assistant',
+      'tool_calls': [
+        {
+          'type': 'function',
+          'function': {'name': call['name'], 'arguments': argsStr},
+        }
+      ],
+    });
+  }
+
+  void recordAssistantMessage(String text) =>
+      _history.add({'role': 'assistant', 'content': text});
+
+  void reset() => _history.clear();
 
   String handleNoFunctionCall() => _clarify();
 
@@ -286,24 +303,14 @@ class SmartHomeOrchestrator {
         homeState?.setDoor(args['door'] as String? ?? '', args['state'] == 'lock');
         return 'Done. The ${args['door']} door is now ${args['state']}ed.';
 
-      case 'open_door':
-      case 'unlock_door':
-        homeState?.setDoor(args['door'] as String? ?? '', false);
-        return 'Done. The ${args['door']} door is now unlocked.';
-
-      case 'close_door':
-        homeState?.setDoor(args['door'] as String? ?? '', true);
-        return 'Done. The ${args['door']} door is now locked.';
-
       case 'get_device_status':
         return _simulateDeviceStatus(args);
 
       case 'set_scene':
         final scene = args['scene'] as String;
         homeState?.applyScene(scene);
-        final displayName = scene.split('_').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
         final details = _sceneDescriptions[scene] ?? '';
-        return 'Done. "$displayName" scene activated. $details';
+        return 'Done. "$scene" scene activated. $details';
 
       default:
         return 'Done.';
@@ -313,44 +320,28 @@ class SmartHomeOrchestrator {
   String _simulateDeviceStatus(Map<String, dynamic> args) {
     final deviceType = args['device_type'] as String? ?? 'all';
     final room = args['room'] as String? ?? '';
+    final rng = Random();
 
-    switch (deviceType) {
-      case 'lights':
-        final display = room.isNotEmpty ? (_roomDisplay[room] ?? room) : null;
-        if (display != null && homeState != null) {
-          final on = homeState!.lights[room] ?? false;
-          return 'The $display lights are currently ${on ? 'on' : 'off'}.';
-        }
-        final onRooms = homeState?.lights.entries
-            .where((e) => e.value)
-            .map((e) => _roomDisplay[e.key] ?? e.key)
-            .toList() ?? [];
-        return onRooms.isEmpty
-            ? 'All lights are off.'
-            : 'Lights on: ${onRooms.join(', ')}.';
-
-      case 'thermostat':
-        final temp = homeState?.temperature ?? 70;
-        final mode = homeState?.thermostatMode ?? 'auto';
-        return 'The thermostat is set to $temp°F in $mode mode.';
-
-      case 'door':
-        final door = room.isNotEmpty ? room : 'front';
-        final locked = homeState?.doors[door] ?? true;
-        return 'The $door door is currently ${locked ? 'locked' : 'unlocked'}.';
-
-      default: // 'all'
-        final temp = homeState?.temperature ?? 70;
-        final mode = homeState?.thermostatMode ?? 'auto';
-        final doors = homeState?.doors.entries
-            .map((e) => '${e.key} ${e.value ? 'locked' : 'unlocked'}')
-            .join(', ') ?? 'unknown';
-        final onRooms = homeState?.lights.entries
-            .where((e) => e.value)
-            .map((e) => _roomDisplay[e.key] ?? e.key)
-            .toList() ?? [];
-        final lightsStr = onRooms.isEmpty ? 'all off' : '${onRooms.join(', ')} on';
-        return 'Lights: $lightsStr. Thermostat: $temp°F ($mode). Doors: $doors.';
+    if (deviceType == 'lights') {
+      final state = rng.nextBool() ? 'on' : 'off';
+      final display = room.isNotEmpty ? (_roomDisplay[room] ?? room) : 'the';
+      return 'The $display lights are currently $state.';
     }
+
+    if (deviceType == 'thermostat') {
+      final temp = 65 + rng.nextInt(11);
+      final mode = ['heat', 'cool', 'auto'][rng.nextInt(3)];
+      return 'The thermostat is set to $temp°F in $mode mode.';
+    }
+
+    if (deviceType == 'door') {
+      final door = room.isNotEmpty ? room : 'front';
+      final state = rng.nextBool() ? 'locked' : 'unlocked';
+      return 'The $door door is currently $state.';
+    }
+
+    // 'all'
+    final temp = 65 + rng.nextInt(11);
+    return 'Lights: mixed (some on, some off). Thermostat: $temp°F. Doors: front locked, back locked, garage unlocked.';
   }
 }

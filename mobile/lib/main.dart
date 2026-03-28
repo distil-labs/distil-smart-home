@@ -446,32 +446,24 @@ class _HomePageState extends State<HomePage> {
     _orchestrator.addUserMessage(text);
 
     try {
-      String? response;
+      final result = await _runner.infer(_orchestrator.messagesForModel, kTools);
+      if (result['ok'] != true) throw Exception(result['error']);
+      final calls = result['functionCalls'] as List?;
+      final rawContent = result['rawContent'] as String? ?? '';
+      final candidate = (calls != null && calls.isNotEmpty)
+          ? (calls.first as Map).cast<String, dynamic>()
+          : null;
+
+      String response;
       Map<String, dynamic>? call;
-      const maxRetries = 5;
-      for (var attempt = 0; attempt < maxRetries; attempt++) {
-        final result = await _runner.infer(_orchestrator.messagesForModel, kTools);
-        if (result['ok'] != true) throw Exception(result['error']);
-        final calls = result['functionCalls'] as List?;
-        final candidate = (calls != null && calls.isNotEmpty)
-            ? (calls.first as Map).cast<String, dynamic>()
-            : null;
-        if (candidate == null) continue;
-        // Model explicitly signals unclear intent — respond immediately, no retry
-        if (candidate['name'] == 'intent_unclear') {
-          response = _orchestrator.handleFunctionCall(candidate);
-          call = candidate;
-          break;
-        }
-        try {
-          response = _orchestrator.handleFunctionCall(candidate);
-          call = candidate;
-          break;
-        } catch (_) {
-          continue; // Parsing error — retry
-        }
+      if (candidate == null) {
+        _orchestrator.recordAssistantMessage('');
+        response = _orchestrator.handleNoFunctionCall();
+      } else {
+        _orchestrator.recordAssistantCall(candidate);
+        response = _orchestrator.handleFunctionCall(candidate);
+        call = candidate;
       }
-      response ??= _orchestrator.handleNoFunctionCall();
 
       if (!mounted) return;
       setState(() {
