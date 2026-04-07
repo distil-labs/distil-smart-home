@@ -65,25 +65,30 @@ except: print('')
 " 2>/dev/null)
   [ -z "$DEVICE" ] && { echo "No iOS device found."; exit 1; }
   echo "iOS device: $DEVICE"
-  echo "Copying model to device..."
-  xcrun devicectl device copy to \
-    --device "$DEVICE" \
-    --source models/smart-home-model \
-    --destination Documents/smart-home-model \
-    --domain-type appDataContainer \
-    --domain-identifier com.distillabs.mobile 2>/dev/null || true
-  flutter run --release --device-id "$DEVICE"
+  echo "Building..."
+  flutter build ios --release
+  APP_PATH="build/ios/iphoneos/Runner.app"
+  echo "Bundling model into app..."
+  cp -R models/smart-home-model "$APP_PATH/"
+  SIGN_ID=$(codesign -dvvv "$APP_PATH" 2>&1 | awk -F= '/^Authority=/{print $2; exit}')
+  codesign --force --sign "$SIGN_ID" --preserve-metadata=identifier,entitlements,flags "$APP_PATH"
+  echo "Installing..."
+  xcrun devicectl device install app --device "$DEVICE" "$APP_PATH"
+  echo "Launching..."
+  xcrun devicectl device process launch --device "$DEVICE" com.distillabs.smarthome 2>/dev/null || true
 
 else
   DEVICE=$(adb devices 2>/dev/null | grep -v "List\|offline" | grep "device$" | head -1 | awk '{print $1}')
   [ -z "$DEVICE" ] && { echo "No Android device found."; exit 1; }
   echo "Android device: $DEVICE"
+  echo "Staging model in assets..."
+  mkdir -p android/app/src/main/assets
+  cp -R models/smart-home-model android/app/src/main/assets/
   echo "Building APK..."
   flutter build apk --release
+  rm -rf android/app/src/main/assets/smart-home-model
   echo "Installing..."
   adb -s "$DEVICE" install -r build/app/outputs/flutter-apk/app-release.apk
-  echo "Copying model..."
-  adb -s "$DEVICE" push models/smart-home-model /sdcard/smart-home-model
   echo "Launching..."
-  adb -s "$DEVICE" shell am start -n com.distillabs.mobile/.MainActivity
+  adb -s "$DEVICE" shell am start -n com.distillabs.smarthome/.MainActivity
 fi

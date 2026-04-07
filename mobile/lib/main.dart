@@ -1,9 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 import 'home_state.dart';
 import 'model_runner.dart';
@@ -28,7 +26,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Smart Home',
+      title: 'Distil Labs Smart Home',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -161,42 +159,42 @@ class _HomeStatusScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: state,
       builder: (context, _) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           if (state.activeScene != null) ...[
             _sceneBanner(state.activeScene!),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
           ],
           _sectionHeader('LIGHTS'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.0,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            childAspectRatio: 1.15,
             children: _roomLabels.entries.map((e) => _lightTile(e.key, e.value)).toList(),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _sectionHeader('THERMOSTAT'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _thermostatCard(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _sectionHeader('DOORS'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.4,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            childAspectRatio: 2.8,
             children: _doorLabels.entries.map((e) => _doorTile(e.key, e.value)).toList(),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _sectionHeader('SCENES'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _scenesRow(),
         ],
       ),
@@ -274,7 +272,7 @@ class _HomeStatusScreen extends StatelessWidget {
       _      => _white,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(12),
@@ -282,12 +280,12 @@ class _HomeStatusScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.thermostat, color: modeColor, size: 28),
-          const SizedBox(width: 12),
+          Icon(Icons.thermostat, color: modeColor, size: 24),
+          const SizedBox(width: 10),
           Text(
             '${state.temperature}°F',
             style: const TextStyle(
-                color: _white, fontSize: 30, fontWeight: FontWeight.w700),
+                color: _white, fontSize: 26, fontWeight: FontWeight.w700),
           ),
           const Spacer(),
           Container(
@@ -310,7 +308,7 @@ class _HomeStatusScreen extends StatelessWidget {
   Widget _doorTile(String door, String label) {
     final locked = state.doors[door] ?? true;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(12),
@@ -408,20 +406,15 @@ class _HomePageState extends State<HomePage> {
     _loadModel();
   }
 
+  static const _modelChannel = MethodChannel('com.distillabs.smarthome/model');
+
   Future<String> _modelPath() async {
-    if (Platform.isIOS) {
-      final dir = await getApplicationDocumentsDirectory();
-      return '${dir.path}/smart-home-model';
-    }
-    return '/sdcard/smart-home-model';
+    final path = await _modelChannel.invokeMethod<String>('getBundledModelPath');
+    if (path != null) return path;
+    throw StateError('Bundled model not found');
   }
 
   Future<void> _loadModel() async {
-    if (Platform.isAndroid) {
-      if (await Permission.manageExternalStorage.isDenied) {
-        await Permission.manageExternalStorage.request();
-      }
-    }
     try {
       final path = await _modelPath();
       await _runner.load(path);

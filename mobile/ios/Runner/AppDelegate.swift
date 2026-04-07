@@ -12,5 +12,23 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ModelPath") else { return }
+    let channel = FlutterMethodChannel(
+      name: "com.distillabs.smarthome/model",
+      binaryMessenger: registrar.messenger()
+    )
+    channel.setMethodCallHandler { call, result in
+      if call.method == "getBundledModelPath" {
+        let path = Bundle.main.bundlePath + "/smart-home-model"
+        if FileManager.default.fileExists(atPath: path) {
+          result(path)
+        } else {
+          result(nil as String?)
+        }
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    }
   }
 }
