@@ -449,7 +449,6 @@ class _HomePageState extends State<HomePage> {
       final result = await _runner.infer(_orchestrator.messagesForModel, kTools);
       if (result['ok'] != true) throw Exception(result['error']);
       final calls = result['functionCalls'] as List?;
-      final rawContent = result['rawContent'] as String? ?? '';
       final candidate = (calls != null && calls.isNotEmpty)
           ? (calls.first as Map).cast<String, dynamic>()
           : null;
@@ -467,7 +466,7 @@ class _HomePageState extends State<HomePage> {
 
       if (!mounted) return;
       setState(() {
-        _messages.add((text: response!, isUser: false, isError: false, call: call));
+        _messages.add((text: response, isUser: false, isError: false, call: call));
       });
     } catch (e) {
       if (!mounted) return;

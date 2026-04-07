@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'home_state.dart';
 
@@ -214,10 +213,10 @@ const _systemPrompt =
 // ---------------------------------------------------------------------------
 
 class SmartHomeOrchestrator {
-  final HomeState? homeState;
+  final HomeState homeState;
   final List<Map<String, dynamic>> _history = [];
 
-  SmartHomeOrchestrator({this.homeState});
+  SmartHomeOrchestrator({required this.homeState});
 
   List<Map<String, dynamic>> get messagesForModel => [
         {'role': 'system', 'content': _systemPrompt},
@@ -283,12 +282,12 @@ class SmartHomeOrchestrator {
   String _execute(String fn, Map<String, dynamic> args) {
     switch (fn) {
       case 'toggle_lights':
-        homeState?.setLight(args['room'] as String? ?? '', args['state'] == 'on');
+        homeState.setLight(args['room'] as String? ?? '', args['state'] == 'on');
         final displayRoom = _roomDisplay[args['room']] ?? args['room'];
         return 'Done. The $displayRoom lights are now ${args['state']}.';
 
       case 'set_thermostat':
-        homeState?.setThermostat(
+        homeState.setThermostat(
           temp: switch (args['temperature']) {
             num n => n.toInt(),
             String s => int.tryParse(s),
@@ -300,7 +299,7 @@ class SmartHomeOrchestrator {
         return 'Done. Thermostat set to ${args['temperature']}°F$modeSuffix.';
 
       case 'lock_door':
-        homeState?.setDoor(args['door'] as String? ?? '', args['state'] == 'lock');
+        homeState.setDoor(args['door'] as String? ?? '', args['state'] == 'lock');
         return 'Done. The ${args['door']} door is now ${args['state']}ed.';
 
       case 'get_device_status':
@@ -308,7 +307,7 @@ class SmartHomeOrchestrator {
 
       case 'set_scene':
         final scene = args['scene'] as String;
-        homeState?.applyScene(scene);
+        homeState.applyScene(scene);
         final details = _sceneDescriptions[scene] ?? '';
         return 'Done. "$scene" scene activated. $details';
 
@@ -320,28 +319,30 @@ class SmartHomeOrchestrator {
   String _simulateDeviceStatus(Map<String, dynamic> args) {
     final deviceType = args['device_type'] as String? ?? 'all';
     final room = args['room'] as String? ?? '';
-    final rng = Random();
 
     if (deviceType == 'lights') {
-      final state = rng.nextBool() ? 'on' : 'off';
+      final on = homeState.lights[room] ?? false;
       final display = room.isNotEmpty ? (_roomDisplay[room] ?? room) : 'the';
-      return 'The $display lights are currently $state.';
+      return 'The $display lights are currently ${on ? 'on' : 'off'}.';
     }
 
     if (deviceType == 'thermostat') {
-      final temp = 65 + rng.nextInt(11);
-      final mode = ['heat', 'cool', 'auto'][rng.nextInt(3)];
-      return 'The thermostat is set to $temp°F in $mode mode.';
+      return 'The thermostat is set to ${homeState.temperature}°F in ${homeState.thermostatMode} mode.';
     }
 
     if (deviceType == 'door') {
       final door = room.isNotEmpty ? room : 'front';
-      final state = rng.nextBool() ? 'locked' : 'unlocked';
-      return 'The $door door is currently $state.';
+      final locked = homeState.doors[door] ?? true;
+      return 'The $door door is currently ${locked ? 'locked' : 'unlocked'}.';
     }
 
     // 'all'
-    final temp = 65 + rng.nextInt(11);
-    return 'Lights: mixed (some on, some off). Thermostat: $temp°F. Doors: front locked, back locked, garage unlocked.';
+    final lightsOn = homeState.lights.entries.where((e) => e.value).map((e) => _roomDisplay[e.key] ?? e.key);
+    final doorsUnlocked = homeState.doors.entries.where((e) => !e.value).map((e) => e.key);
+
+    final lightStr = lightsOn.isEmpty ? 'all off' : '${lightsOn.join(', ')} on';
+    final doorStr = doorsUnlocked.isEmpty ? 'all locked' : '${doorsUnlocked.join(', ')} unlocked';
+
+    return 'Lights: $lightStr. Thermostat: ${homeState.temperature}°F ${homeState.thermostatMode}. Doors: $doorStr.';
   }
 }

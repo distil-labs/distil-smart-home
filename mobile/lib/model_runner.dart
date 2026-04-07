@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'cactus.dart';
 
-const _inferOptions = '{"temperature":0,"max_tokens":1024,"force_tools":true,"auto_handoff":false,"enable_thinking":false,"stop_sequences":["<end_of_turn>"],"telemetry_enabled":false}';
+const _inferOptions = '{"temperature":0,"max_tokens":256,"force_tools":false,"tool_rag_top_k":0,"auto_handoff":false,"enable_thinking_if_supported":false,"stop_sequences":["<end_of_turn>","<turn|>"],"telemetry_enabled":false}';
 
 void _isolateEntry(SendPort toMain) {
   final port = ReceivePort();
@@ -34,15 +34,13 @@ void _isolateEntry(SendPort toMain) {
           null,
         );
         List functionCalls = [];
-        String rawContent = '';
         try {
           final json = jsonDecode(raw) as Map<String, dynamic>;
           functionCalls = json['function_calls'] as List? ?? [];
-          rawContent = json['raw_content'] as String? ?? '';
         } on FormatException {
           // malformed model output — return empty so caller retries
         }
-        reply!.send({'ok': true, 'functionCalls': functionCalls, 'rawContent': rawContent});
+        reply!.send({'ok': true, 'functionCalls': functionCalls});
       }
     } catch (e) {
       reply!.send({'ok': false, 'error': e.toString()});
@@ -53,7 +51,6 @@ void _isolateEntry(SendPort toMain) {
 class ModelRunner {
   SendPort? _port;
   Isolate? _isolate;
-  bool get isReady => _port != null;
 
   Future<void> load(String modelPath) async {
     final inbox = ReceivePort();
