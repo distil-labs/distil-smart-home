@@ -18,7 +18,7 @@ check flutter "Flutter SDK — https://flutter.dev/docs/get-started/install"
 [ "$PLATFORM" = "--android" ] && check adb  "ADB — install Android SDK platform-tools: https://developer.android.com/tools/releases/platform-tools"
 
 # Clone and set up Cactus
-[ ! -d "cactus" ] && git clone https://github.com/cactus-compute/cactus && git -C cactus checkout c768b0457f4ce07d3ea00b5d486079c4c8d95dbd
+[ ! -d "cactus" ] && git clone https://github.com/cactus-compute/cactus && git -C cactus checkout 97d4414457d0e406bbb2347a3544a1d2f2e52001
 source cactus/setup
 cp cactus/flutter/cactus.dart lib/cactus.dart
 
