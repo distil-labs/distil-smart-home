@@ -34,13 +34,17 @@ void _isolateEntry(SendPort toMain) {
           null,
         );
         List functionCalls = [];
+        double ttft = 0;
+        double tps = 0;
         try {
           final json = jsonDecode(raw) as Map<String, dynamic>;
           functionCalls = json['function_calls'] as List? ?? [];
+          ttft = (json['time_to_first_token_ms'] as num?)?.toDouble() ?? 0;
+          tps = (json['decode_tps'] as num?)?.toDouble() ?? 0;
         } on FormatException {
           // malformed model output — return empty so caller retries
         }
-        reply!.send({'ok': true, 'functionCalls': functionCalls});
+        reply!.send({'ok': true, 'functionCalls': functionCalls, 'ttft': ttft, 'tps': tps});
       }
     } catch (e) {
       reply!.send({'ok': false, 'error': e.toString()});

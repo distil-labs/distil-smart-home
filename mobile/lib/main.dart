@@ -18,7 +18,7 @@ const _textSec = Color(0xFF8890A4);  // muted secondary text
 const _errorBg = Color(0xFF2A1520);  // dark red tint
 const _errorTxt= Color(0xFFFF6B7A);  // soft red
 
-typedef _Msg = ({String text, bool isUser, bool isError, Map<String, dynamic>? call});
+typedef _Msg = ({String text, bool isUser, bool isError, Map<String, dynamic>? call, double ttft, double tps});
 
 void main() => runApp(const App());
 
@@ -439,7 +439,7 @@ class _HomePageState extends State<HomePage> {
     _inputCtrl.clear();
 
     setState(() {
-      _messages.add((text: text, isUser: true, isError: false, call: null));
+      _messages.add((text: text, isUser: true, isError: false, call: null, ttft: 0, tps: 0));
       _thinking = true;
     });
     _scrollToBottom();
@@ -452,6 +452,8 @@ class _HomePageState extends State<HomePage> {
       final candidate = (calls != null && calls.isNotEmpty)
           ? (calls.first as Map).cast<String, dynamic>()
           : null;
+      final ttft = (result['ttft'] as num?)?.toDouble() ?? 0;
+      final tps = (result['tps'] as num?)?.toDouble() ?? 0;
 
       String response;
       Map<String, dynamic>? call;
@@ -466,12 +468,12 @@ class _HomePageState extends State<HomePage> {
 
       if (!mounted) return;
       setState(() {
-        _messages.add((text: response, isUser: false, isError: false, call: call));
+        _messages.add((text: response, isUser: false, isError: false, call: call, ttft: ttft, tps: tps));
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add((text: 'Error: $e', isUser: false, isError: true, call: null));
+        _messages.add((text: 'Error: $e', isUser: false, isError: true, call: null, ttft: 0, tps: 0));
       });
     } finally {
       if (mounted) setState(() => _thinking = false);
@@ -704,6 +706,14 @@ class _HomePageState extends State<HomePage> {
               child: Text(msg.text,
                   style: const TextStyle(color: _white, fontSize: 15)),
             ),
+            if (msg.tps > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  'TTFT ${msg.ttft.toStringAsFixed(0)}ms  ·  ${msg.tps.toStringAsFixed(1)} tok/s',
+                  style: const TextStyle(color: _textSec, fontSize: 10),
+                ),
+              ),
           ],
         ),
       ),
