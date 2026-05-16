@@ -150,9 +150,9 @@ const _sceneIcons = {
   'party':       Icons.celebration,
 };
 
-class _HomeStatusScreen extends StatelessWidget {
+class HomeStatusScreen extends StatelessWidget {
   final HomeState state;
-  const _HomeStatusScreen(this.state);
+  const HomeStatusScreen(this.state, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +223,18 @@ class _HomeStatusScreen extends StatelessWidget {
         children: [
           Icon(icon, color: _logo, size: 16),
           const SizedBox(width: 8),
-          const Text('Scene active: ', style: TextStyle(color: _textSec, fontSize: 13)),
-          Text(_sceneLabels[scene] ?? scene,
-              style: const TextStyle(
-                  color: _logo, fontSize: 13, fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: 'Scene active: ', style: TextStyle(color: _textSec, fontSize: 13)),
+                  TextSpan(text: _sceneLabels[scene] ?? scene,
+                      style: const TextStyle(color: _logo, fontSize: 13, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -234,33 +242,36 @@ class _HomeStatusScreen extends StatelessWidget {
 
   Widget _lightTile(String room, String label) {
     final on = state.lights[room] ?? false;
-    return Container(
-      decoration: BoxDecoration(
-        color: on ? _logo.withValues(alpha: 0.1) : _surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: on ? _logo.withValues(alpha: 0.45) : _white.withValues(alpha: 0.07),
+    return GestureDetector(
+      onTap: () => state.setLight(room, !on),
+      child: Container(
+        decoration: BoxDecoration(
+          color: on ? _logo.withValues(alpha: 0.1) : _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: on ? _logo.withValues(alpha: 0.45) : _white.withValues(alpha: 0.07),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            on ? Icons.lightbulb : Icons.lightbulb_outline,
-            color: on ? _logo : _textSec,
-            size: 22,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: TextStyle(
-                color: on ? _white : _textSec,
-                fontSize: 10,
-                fontWeight: on ? FontWeight.w600 : FontWeight.normal,
-                height: 1.3),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              on ? Icons.lightbulb : Icons.lightbulb_outline,
+              color: on ? _logo : _textSec,
+              size: 22,
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              style: TextStyle(
+                  color: on ? _white : _textSec,
+                  fontSize: 10,
+                  fontWeight: on ? FontWeight.w600 : FontWeight.normal,
+                  height: 1.3),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -271,71 +282,81 @@ class _HomeStatusScreen extends StatelessWidget {
       'cool' => _logo,
       _      => _white,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.thermostat, color: modeColor, size: 24),
-          const SizedBox(width: 10),
-          Text(
-            '${state.temperature}°F',
-            style: const TextStyle(
-                color: _white, fontSize: 26, fontWeight: FontWeight.w700),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: modeColor.withValues(alpha: 0.5)),
+    const modes = ['auto', 'heat', 'cool'];
+    return GestureDetector(
+      onTap: () {
+        final next = modes[(modes.indexOf(state.thermostatMode) + 1) % modes.length];
+        state.setThermostat(mode: next);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.thermostat, color: modeColor, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              '${state.temperature}°F',
+              style: const TextStyle(
+                  color: _white, fontSize: 26, fontWeight: FontWeight.w700),
             ),
-            child: Text(
-              state.thermostatMode,
-              style: TextStyle(
-                  color: modeColor, fontSize: 13, fontWeight: FontWeight.w500),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: modeColor.withValues(alpha: 0.5)),
+              ),
+              child: Text(
+                state.thermostatMode,
+                style: TextStyle(
+                    color: modeColor, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _doorTile(String door, String label) {
     final locked = state.doors[door] ?? true;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: locked
-              ? _white.withValues(alpha: 0.08)
-              : _errorTxt.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(locked ? Icons.lock : Icons.lock_open,
-              color: locked ? _textSec : _errorTxt, size: 18),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      color: _white, fontSize: 13, fontWeight: FontWeight.w500)),
-              Text(locked ? 'locked' : 'unlocked',
-                  style: TextStyle(
-                      color: locked ? _textSec : _errorTxt, fontSize: 11)),
-            ],
+    return GestureDetector(
+      onTap: () => state.setDoor(door, !locked),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: locked
+                ? _white.withValues(alpha: 0.08)
+                : _errorTxt.withValues(alpha: 0.35),
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(locked ? Icons.lock : Icons.lock_open,
+                color: locked ? _textSec : _errorTxt, size: 18),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        color: _white, fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(locked ? 'locked' : 'unlocked',
+                    style: TextStyle(
+                        color: locked ? _textSec : _errorTxt, fontSize: 11)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -347,28 +368,31 @@ class _HomeStatusScreen extends StatelessWidget {
       children: _sceneLabels.entries.map((e) {
         final active = state.activeScene == e.key;
         final icon = _sceneIcons[e.key] ?? Icons.auto_awesome;
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? _logo.withValues(alpha: 0.1) : _surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active
-                  ? _logo.withValues(alpha: 0.45)
-                  : _white.withValues(alpha: 0.1),
+        return GestureDetector(
+          onTap: () => state.applyScene(e.key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? _logo.withValues(alpha: 0.1) : _surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: active
+                    ? _logo.withValues(alpha: 0.45)
+                    : _white.withValues(alpha: 0.1),
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: active ? _logo : _textSec),
-              const SizedBox(width: 6),
-              Text(e.value,
-                  style: TextStyle(
-                      color: active ? _logo : _textSec,
-                      fontSize: 12,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
-            ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: active ? _logo : _textSec),
+                const SizedBox(width: 6),
+                Text(e.value,
+                    style: TextStyle(
+                        color: active ? _logo : _textSec,
+                        fontSize: 12,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
+              ],
+            ),
           ),
         );
       }).toList(),
@@ -560,7 +584,7 @@ class _HomePageState extends State<HomePage> {
                           style: const TextStyle(color: _errorTxt)),
                     ))
                   : _chat(),
-          _HomeStatusScreen(_homeState),
+          HomeStatusScreen(_homeState),
         ],
       ),
       bottomNavigationBar: NavigationBar(

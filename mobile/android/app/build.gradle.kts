@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.distillabs.smarthome"
+    namespace = "com.distillabs.smarthomeapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.1.12297006"
 
@@ -30,11 +30,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.distillabs.smarthome"
+        applicationId = "com.distillabs.smarthomeapp"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24  // Cactus requires API 24+
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36  // Google Play requires 35+; Flutter 3.41 default is 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -63,4 +63,21 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Bundle the on-device model into APK/AAB assets at build time.
+// The model directory is produced by `cactus convert` and lives in models/.
+val modelDir = file("${project.rootDir}/../models/smart-home-model")
+val assetsModelDir = file("src/main/assets/smart-home-model")
+
+tasks.register<Sync>("bundleModel") {
+    from(modelDir)
+    into(assetsModelDir)
+    enabled = modelDir.exists()
+}
+
+tasks.configureEach {
+    if (name.startsWith("merge") && name.endsWith("Assets")) {
+        dependsOn("bundleModel")
+    }
 }

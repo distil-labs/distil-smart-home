@@ -1,4 +1,4 @@
-package com.distillabs.smarthome
+package com.distillabs.smarthomeapp
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
